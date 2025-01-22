@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>UBC练一练</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -13,5 +13,64 @@
     <li><a href="join.html">加入活动</a></li>
     <li><a href="ask.html">匿名提问</a></li>
   </ul>
+
+  <h2>全部活动列表</h2>
+  <div id="all-activities">正在加载活动...</div>
+
+  <!-- 这里写一个脚本，用于加载并显示所有活动 -->
+  <script type="module">
+    import {
+      db,
+      getDocs,
+      collection,
+      orderBy,
+      query
+    } from "./src/firebase.js";
+
+    const activitiesDiv = document.getElementById("all-activities");
+
+    async function loadAllActivities() {
+      try {
+        activitiesDiv.innerHTML = ""; // 清空“正在加载...”
+
+        // 不做时间过滤，按 time 升序排列所有活动
+        const allActivitiesQuery = query(
+          collection(db, "activities"),
+          orderBy("time", "asc")
+        );
+
+        const querySnapshot = await getDocs(allActivitiesQuery);
+
+        if (querySnapshot.empty) {
+          activitiesDiv.textContent = "暂无活动。";
+          return;
+        }
+
+        // 遍历活动并渲染到页面
+        querySnapshot.forEach((docSnap) => {
+          const activity = docSnap.data();
+          const div = document.createElement("div");
+          div.innerHTML = `
+            <p><strong>时间:</strong> ${
+                activity.time
+                ? activity.time.toDate().toLocaleString() // 转换 Timestamp 为 Date
+                : "无"
+            }</p>
+            <p><strong>地点:</strong> ${activity.place || "无"}</p>
+            <p><strong>类型:</strong> ${activity.type || "无"}</p>
+            <p><strong>已参与:</strong> ${activity.participants ? activity.participants.join(", ") : ""}</p>
+            <hr>
+          `;
+          activitiesDiv.appendChild(div);
+        });
+      } catch (error) {
+        console.error("Error loading all activities:", error);
+        activitiesDiv.textContent = "加载活动失败，请刷新重试。";
+      }
+    }
+
+    // 页面加载时马上执行查询
+    loadAllActivities();
+  </script>
 </body>
 </html>

@@ -7,26 +7,57 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <button id="back-button" onclick="window.location.href='index.html'">返回主页</button>
   <h1>活动列表</h1>
   <div id="activities">
     <p>正在加载活动...</p>
   </div>
+
   <script type="module">
-    import { db, query, where, getDocs, collection, orderBy } from "../src/firebase.js";
+    import {
+      db,
+      query,
+      where,
+      getDocs,
+      collection,
+      orderBy,
+      doc,
+      // 要修改文档，需要这两个：
+      updateDoc,
+      arrayUnion
+    } from "./src/firebase.js";
 
-    const activitiesDiv = document.getElementById("activities");
-
-    async function loadActivities() {
-      const now = new Date(); // 当前时间
+    // 定义点击“加入活动”时的逻辑
+    window.joinActivity = async (activityId) => {
+      const name = prompt("请输入你的名字：");
+      if (!name) return; // 用户取消或者输入空
 
       try {
-        activitiesDiv.innerHTML = ""; // 清空加载提示
+        const activityDocRef = doc(db, "activities", activityId);
 
-        // 查询未过期的活动，并按时间排序
+        // 把用户输入的名字用 arrayUnion 推进 participants 数组
+        await updateDoc(activityDocRef, {
+          participants: arrayUnion(name)
+        });
+
+        alert(`你已加入活动 ${activityId}!`);
+        window.location.href = "index.html";
+      } catch (error) {
+        console.error("Error joining activity:", error);
+        alert("加入活动失败，请稍后重试。");
+      }
+    };
+
+    async function loadActivities() {
+      const now = new Date();
+      try {
+        activitiesDiv.innerHTML = ""; // 清空“正在加载”
+
+        // 筛选: time > 当前时间，按 time 升序
         const activitiesQuery = query(
           collection(db, "activities"),
-          where("expiration", ">", now), // 筛选未过期活动
-          orderBy("expiration", "asc") // 按到期时间升序排序
+          where("time", ">", now),
+          orderBy("time", "asc")
         );
 
         const querySnapshot = await getDocs(activitiesQuery);
@@ -37,14 +68,17 @@
         }
 
         // 显示活动列表
-        querySnapshot.forEach((doc) => {
-          const activity = doc.data();
+        querySnapshot.forEach((docSnap) => {
+          const activity = docSnap.data();
           const div = document.createElement("div");
           div.innerHTML = `
-            <p><strong>时间:</strong> ${new Date(activity.time).toLocaleString()}</p>
-            <p><strong>地点:</strong> ${activity.place}</p>
-            <p><strong>类型:</strong> ${activity.type}</p>
-            <button onclick="joinActivity('${doc.id}')">加入</button>
+            <p><strong>时间:</strong> ${
+              activity.time ? new Date(activity.time.toDate()).toLocaleString() : "无"
+            }</p>
+            <p><strong>地点:</strong> ${activity.place || "无"}</p>
+            <p><strong>类型:</strong> ${activity.type || "无"}</p>
+            <p><strong>已参与:</strong> ${activity.participants ? activity.participants.join(", ") : ""}</p>
+            <button onclick="joinActivity('${docSnap.id}')">加入</button>
             <hr>
           `;
           activitiesDiv.appendChild(div);
@@ -55,13 +89,8 @@
       }
     }
 
-    // 模拟加入活动功能
-    window.joinActivity = (id) => {
-      alert(`已加入活动: ${id}`);
-      // 可扩展为记录用户加入的逻辑
-    };
-
-    // 加载活动列表
+    const activitiesDiv = document.getElementById("activities");
+    // 初次加载活动列表
     loadActivities();
   </script>
 </body>

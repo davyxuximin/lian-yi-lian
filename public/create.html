@@ -7,8 +7,12 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <button id="back-button" onclick="window.location.href='index.html'">返回主页</button>
   <h1>创建活动</h1>
   <form id="create-form">
+    <label for="name">姓名:</label>
+    <input type="text" id="name" name="name" placeholder="请输入您的姓名" required>
+    <br><br>
     <label for="time">时间:</label>
     <input type="datetime-local" id="time" name="time" required>
     <br><br>
@@ -40,8 +44,10 @@
   </form>
   <p id="message"></p>
 
+  <script type="module" src="./src/firebase.js"></script>
+
   <script type="module">
-    import { db, collection, addDoc } from "../src/firebase.js";
+    import { db, collection, addDoc } from "./src/firebase.js";
 
     const form = document.getElementById("create-form");
     const message = document.getElementById("message");
@@ -65,7 +71,7 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const time = form.time.value;
+      const name = form.name.value.trim(); 
       const type = form.type.value;
       let place = placeSelect.value;
 
@@ -80,12 +86,20 @@
       }
 
       try {
+        const timeString = form.time.value;
+        const timeDate = new Date(timeString);
         // 添加到 Firestore 数据库
-        await addDoc(collection(db, "activities"), { time, place, type });
+        await addDoc(collection(db, "activities"), {
+            time: timeDate, // 这里存进 Firestore 是一个 Date 对象
+            place,
+            type,
+            participants: [name] 
+          });
         message.textContent = "活动创建成功！";
         message.style.color = "green";
-        form.reset(); // 重置表单
-        customPlaceContainer.style.display = "none"; // 隐藏自定义地点输入框
+        setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1000);
       } catch (error) {
         console.error("Error creating activity:", error);
         message.textContent = "创建失败，请重试。";

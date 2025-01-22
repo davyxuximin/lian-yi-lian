@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <button id="back-button" onclick="window.location.href='index.html'">返回主页</button>
   <h1>匿名提问</h1>
   <form id="ask-form">
     <label for="question">你的问题:</label>
@@ -21,7 +22,7 @@
   </div>
 
   <script type="module">
-    import { db, collection, addDoc, getDocs } from "../src/firebase.js";
+    import { db, collection, addDoc, getDocs } from "./src/firebase.js";
 
     const askForm = document.getElementById("ask-form");
     const message = document.getElementById("message");

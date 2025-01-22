@@ -3,14 +3,15 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-exports.cleanUpExpiredActivities = onSchedule("every 24 hours", async () => {
+exports.cleanUpExpiredActivities = onSchedule("0 * * * *", async () => {
+  // 例如，每小时执行一次
   const db = admin.firestore();
   const now = new Date();
 
   try {
-    // 查询过期的活动
+    // 查询活动时间早于当前 now 的，说明已经开始或已过期
     const activitiesRef = db.collection("activities");
-    const expiredActivitiesQuery = activitiesRef.where("expiration", "<", now);
+    const expiredActivitiesQuery = activitiesRef.where("time", "<", now);
 
     const snapshot = await expiredActivitiesQuery.get();
 
