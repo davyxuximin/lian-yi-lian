@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>匿名提问</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>匿名提问</h1>
+  <form id="ask-form">
+    <label for="question">你的问题:</label>
+    <textarea id="question" name="question" placeholder="请输入你的问题..." required></textarea>
+    <br><br>
+    <button type="submit">提交问题</button>
+  </form>
+  <p id="message"></p>
+  <h2>所有提问</h2>
+  <div id="questions">
+    <p>正在加载问题...</p>
+  </div>
+
+  <script type="module">
+    import { db, collection, addDoc, getDocs } from "../src/firebase.js";
+
+    const askForm = document.getElementById("ask-form");
+    const message = document.getElementById("message");
+    const questionsDiv = document.getElementById("questions");
+
+    // 提交问题表单
+    askForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = askForm.question.value.trim();
+
+      if (!question) {
+        message.textContent = "问题不能为空！";
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "questions"), { question, timestamp: new Date() });
+        message.textContent = "问题提交成功！";
+        askForm.reset();
+        loadQuestions(); // 提交后刷新问题列表
+      } catch (error) {
+        console.error("Error submitting question:", error);
+        message.textContent = "提交失败，请重试。";
+      }
+    });
+
+    // 加载所有问题
+    async function loadQuestions() {
+      try {
+        questionsDiv.innerHTML = ""; // 清空加载提示
+        const querySnapshot = await getDocs(collection(db, "questions"));
+        querySnapshot.forEach((doc) => {
+          const question = doc.data().question;
+          const div = document.createElement("div");
+          div.textContent = question;
+          div.style.marginBottom = "10px";
+          questionsDiv.appendChild(div);
+        });
+
+        if (questionsDiv.innerHTML === "") {
+          questionsDiv.textContent = "暂无问题。";
+        }
+      } catch (error) {
+        console.error("Error loading questions:", error);
+        questionsDiv.textContent = "加载问题失败，请刷新重试。";
+      }
+    }
+
+    // 初次加载问题
+    loadQuestions();
+  </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>加入活动</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>活动列表</h1>
+  <div id="activities">
+    <p>正在加载活动...</p>
+  </div>
+  <script type="module">
+    import { db, query, where, getDocs, collection, orderBy } from "../src/firebase.js";
+
+    const activitiesDiv = document.getElementById("activities");
+
+    async function loadActivities() {
+      const now = new Date(); // 当前时间
+
+      try {
+        activitiesDiv.innerHTML = ""; // 清空加载提示
+
+        // 查询未过期的活动，并按时间排序
+        const activitiesQuery = query(
+          collection(db, "activities"),
+          where("expiration", ">", now), // 筛选未过期活动
+          orderBy("expiration", "asc") // 按到期时间升序排序
+        );
+
+        const querySnapshot = await getDocs(activitiesQuery);
+
+        if (querySnapshot.empty) {
+          activitiesDiv.textContent = "暂无有效活动。";
+          return;
+        }
+
+        // 显示活动列表
+        querySnapshot.forEach((doc) => {
+          const activity = doc.data();
+          const div = document.createElement("div");
+          div.innerHTML = `
+            <p><strong>时间:</strong> ${new Date(activity.time).toLocaleString()}</p>
+            <p><strong>地点:</strong> ${activity.place}</p>
+            <p><strong>类型:</strong> ${activity.type}</p>
+            <button onclick="joinActivity('${doc.id}')">加入</button>
+            <hr>
+          `;
+          activitiesDiv.appendChild(div);
+        });
+      } catch (error) {
+        console.error("Error loading activities:", error);
+        activitiesDiv.textContent = "加载活动失败，请刷新重试。";
+      }
+    }
+
+    // 模拟加入活动功能
+    window.joinActivity = (id) => {
+      alert(`已加入活动: ${id}`);
+      // 可扩展为记录用户加入的逻辑
+    };
+
+    // 加载活动列表
+    loadActivities();
+  </script>
+</body>
+</html>

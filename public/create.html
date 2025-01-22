@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创建活动</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>创建活动</h1>
+  <form id="create-form">
+    <label for="time">时间:</label>
+    <input type="datetime-local" id="time" name="time" required>
+    <br><br>
+
+    <label for="place">地点:</label>
+    <select id="place" name="place" required>
+      <option value="" disabled selected>请选择地点</option>
+      <option value="ARC">ARC</option>
+      <option value="birdcoop">birdcoop</option>
+      <option value="gold's gym marketplace">gold's gym marketplace</option>
+      <option value="fittopia">fittopia</option>
+      <option value="fitnessworld">fitnessworld</option>
+      <option value="other">其他</option>
+    </select>
+    <br><br>
+
+    <!-- 自定义地点输入框，默认隐藏 -->
+    <div id="custom-place-container" style="display: none;">
+      <label for="custom-place">自定义地点:</label>
+      <input type="text" id="custom-place" name="custom-place" placeholder="请输入自定义地点">
+      <br><br>
+    </div>
+
+    <label for="type">活动类型:</label>
+    <input type="text" id="type" name="type" placeholder="例如：跑步、健身" required>
+    <br><br>
+
+    <button type="submit">创建</button>
+  </form>
+  <p id="message"></p>
+
+  <script type="module">
+    import { db, collection, addDoc } from "../src/firebase.js";
+
+    const form = document.getElementById("create-form");
+    const message = document.getElementById("message");
+    const placeSelect = document.getElementById("place");
+    const customPlaceContainer = document.getElementById("custom-place-container");
+    const customPlaceInput = document.getElementById("custom-place");
+
+    // 监听地点选择事件，显示或隐藏自定义地点输入框
+    placeSelect.addEventListener("change", () => {
+      if (placeSelect.value === "other") {
+        customPlaceContainer.style.display = "block";
+        customPlaceInput.required = true; // 自定义地点输入框设置为必填
+      } else {
+        customPlaceContainer.style.display = "none";
+        customPlaceInput.required = false; // 移除必填要求
+        customPlaceInput.value = ""; // 重置自定义地点的值
+      }
+    });
+
+    // 表单提交事件
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const time = form.time.value;
+      const type = form.type.value;
+      let place = placeSelect.value;
+
+      // 如果选择了“其他”，获取自定义地点的值
+      if (place === "other") {
+        place = customPlaceInput.value.trim();
+        if (!place) {
+          message.textContent = "请填写自定义地点！";
+          message.style.color = "red";
+          return;
+        }
+      }
+
+      try {
+        // 添加到 Firestore 数据库
+        await addDoc(collection(db, "activities"), { time, place, type });
+        message.textContent = "活动创建成功！";
+        message.style.color = "green";
+        form.reset(); // 重置表单
+        customPlaceContainer.style.display = "none"; // 隐藏自定义地点输入框
+      } catch (error) {
+        console.error("Error creating activity:", error);
+        message.textContent = "创建失败，请重试。";
+        message.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>
